@@ -38,6 +38,21 @@ def haar_features_indexes(s, p):
                         indexes.append([t, s_j, s_k, p_j, p_k])
     return indexes
 
+def integral_image(i):
+    h, w = i.shape
+    ii = np.zeros(i.shape, dtype="int32")
+    row_ii = np.zeros((w), dtype="int32")
+    for j in range(h):
+        for k in range(w):
+            row_ii[k] = i[j, k]
+            if k > 0:
+                row_ii[k] += row_ii[k - 1]
+            ii[j, k] = row_ii[k]
+            if j > 0:
+                ii[j, k] += ii[j-1, k]
+    return ii
+
+
 if __name__ == '__main__':
     path = "../data/"
     i0 = cv2.imread(path + "000000.jpg")
@@ -46,6 +61,9 @@ if __name__ == '__main__':
     cv2.imshow("test image", i)
     cv2.waitKey(0)
 
-    hfs_indexes = haar_features_indexes(2, 2)
+    hfs_indexes = haar_features_indexes(4, 5)
     print(len(hfs_indexes))
-    print(hfs_indexes)
+
+    ii = integral_image(i)
+    print(i[:4, :4])
+    print(ii[:4, :4])
