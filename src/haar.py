@@ -39,19 +39,36 @@ def haar_features_indexes(s, p):
     return indexes
 
 def integral_image(i):
-    h, w = i.shape
-    ii = np.zeros(i.shape, dtype="int32")
-    row_ii = np.zeros((w), dtype="int32")
-    for j in range(h):
-        for k in range(w):
-            row_ii[k] = i[j, k]
-            if k > 0:
-                row_ii[k] += row_ii[k - 1]
-            ii[j, k] = row_ii[k]
-            if j > 0:
-                ii[j, k] += ii[j-1, k]
+    # h, w = i.shape
+    # ii = np.zeros(i.shape, dtype="int32")
+    # row_ii = np.zeros((w), dtype="int32")
+    # for j in range(h):
+    #     for k in range(w):
+    #         row_ii[k] = i[j, k]
+    #         if k > 0:
+    #             row_ii[k] += row_ii[k - 1]
+    #         ii[j, k] = row_ii[k]
+    #         if j > 0:
+    #             ii[j, k] += ii[j-1, k]
+    ii = np.apply_over_axes(np.cumsum, i, axes=[0, 1])
     return ii
 
+def delta(ii, j1, k1, j2, k2):
+    """
+    Calculate cumsum over rectangle
+    j1 - start position row
+    k1 - start position column
+    j2 - end position row
+    k2 - end position column
+    """
+    d = ii[j2, k2]
+    if j1 > 0:
+        d -= ii[j1 - 1, k2]
+    if k1 > 0:
+        d -= ii[j2, k1 - 1]
+    if j1 > 0 and k1 > 0:
+        d += ii[j1 - 1, k1 - 1]
+    return d
 
 if __name__ == '__main__':
     path = "../data/"
@@ -59,11 +76,13 @@ if __name__ == '__main__':
     i1 = resize_image(i0)
     i = gray_image(i1)
     cv2.imshow("test image", i)
-    cv2.waitKey(0)
 
     hfs_indexes = haar_features_indexes(4, 5)
     print(len(hfs_indexes))
 
     ii = integral_image(i)
-    print(i[:4, :4])
-    print(ii[:4, :4])
+    j1, k1, j2, k2 = (20, 50, 400, 450)
+    print(np.sum(i[j1 : j2+1, k1:k2+1]))
+    print(delta(ii, j1, k1, j2, k2))
+
+    cv2.waitKey(0)
