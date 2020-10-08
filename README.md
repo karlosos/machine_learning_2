@@ -11,3 +11,8 @@
 ```
 jupyter lab
 ```
+
+## Resources
+
+https://docs.opencv.org/master/
+
