@@ -22,6 +22,22 @@ def gray_image(i):
     i = cv2.cvtColor(i, cv2.COLOR_BGR2GRAY)
     return i
 
+def haar_features_indexes(s, p):
+    """
+    Generate set of indexes: (t, s_j, s_k, p_j, p_k)
+
+    s - scale
+    p - pivots
+    """
+    indexes = []
+    for t in range(len(HAAR_TEMPLATES)):
+        for s_j in range(s):
+            for s_k in range(s):
+                for p_j in range(-p+1, p):
+                    for p_k in range(-p+1, p):
+                        indexes.append([t, s_j, s_k, p_j, p_k])
+    return indexes
+
 if __name__ == '__main__':
     path = "../data/"
     i0 = cv2.imread(path + "000000.jpg")
@@ -29,3 +45,7 @@ if __name__ == '__main__':
     i = gray_image(i1)
     cv2.imshow("test image", i)
     cv2.waitKey(0)
+
+    hfs_indexes = haar_features_indexes(2, 2)
+    print(len(hfs_indexes))
+    print(hfs_indexes)
