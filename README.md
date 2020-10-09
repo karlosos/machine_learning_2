@@ -1,4 +1,8 @@
-# Machine Learning 2
+<h1 align="center">Machine Learning 2</h1>
+
+<div align="center">
+
+</div>
 
 ## Development
 
