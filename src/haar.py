@@ -7,12 +7,15 @@ DEF_HEIGHT = 480
 # located within a unit square
 # each rectangle given as a quadruple (j, k), (h, w)
 HAAR_TEMPLATES = [
-    np.array([0.0, 0.0, 1.0, 0.5]),  # left-right edge
-    np.array([0.0, 0.0, 0.5, 1.0]),  # up-down edge
-    np.array([0.0, 0.25, 1.0, 0.5]),  # left-middle-right edge
-    np.array([0.25, 0, 0.5, 1]),  # left-middle-right edge
+    np.array([[0.0, 0.0, 1.0, 0.5]]),  # left-right edge
+    np.array([[0.0, 0.0, 0.5, 1.0]]),  # up-down edge
+    np.array([[0.0, 0.25, 1.0, 0.5]]),  # left-middle-right edge
+    np.array([[0.25, 0, 0.5, 1]]),  # left-middle-right edge
     np.array([[0.0, 0.0, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5]]),  # diagonal
 ]
+
+F_MIN = 0.2
+F_MAX = 0.5
 
 
 def resize_image(i):
@@ -30,8 +33,8 @@ def haar_features_indexes(s, p):
     """
     Generate set of indexes: (t, s_j, s_k, p_j, p_k)
 
-    s - scale
-    p - pivots
+    s - number of scales
+    p - number pivots, latice of pivots
     """
     indexes = []
     for t in range(len(HAAR_TEMPLATES)):
@@ -77,19 +80,54 @@ def delta(ii, j1, k1, j2, k2):
     return d
 
 
+def haar_features_coordinates(hfs_indexes, s, p):
+    """
+    Generates coordinates of features within unit square
+    """
+    F_SIZE_JUMP = (F_MAX - F_MIN) / (s - 1) if s > 1 else F_MAX
+    jump_denominator = 2 * p - 2
+
+    hfs_coords = []
+    for t, s_j, s_k, p_j, p_k in hfs_indexes:
+        f_h = F_MIN + s_j * F_SIZE_JUMP
+        f_w = F_MIN + s_k * F_SIZE_JUMP
+        jump_j = (1.0 - f_h) / jump_denominator
+        jump_k = (1.0 - f_w) / jump_denominator
+        offset_j = 0.5 + p_j * jump_j - 0.5 * f_h
+        offset_k = 0.5 + p_k * jump_k - 0.5 * f_w
+        hf_coords = [np.array([offset_j, offset_k, f_h, f_w])]
+
+        for white in HAAR_TEMPLATES[t]:
+            white_j = white[0] * f_h
+            white_k = white[1] * f_w
+            white_h = white[2] * f_h
+            white_w = white[3] * f_w
+            hf_coords.append(np.array([white_j, white_k, white_h, white_w]))
+
+        hfs_coords.append(hf_coords)
+
+    return np.array(hfs_coords)
+
+
 if __name__ == "__main__":
     path = "./data/"
     i0 = cv2.imread(path + "000000.jpg")
     i1 = resize_image(i0)
     i = gray_image(i1)
-    cv2.imshow("test image", i)
+    # cv2.imshow("test image", i)
 
-    hfs_indexes = haar_features_indexes(4, 5)
+    s = 2
+    p = 2
+
+    hfs_indexes = haar_features_indexes(s, p)
     print(len(hfs_indexes))
+
+    hfs_coords = haar_features_coordinates(hfs_indexes, s=s, p=p)
+    print(hfs_coords)
 
     ii = integral_image(i)
     j1, k1, j2, k2 = (20, 50, 400, 450)
-    print(np.sum(i[j1:j2 + 1, k1:k2 + 1]))
+    print(np.sum(i[j1 : j2 + 1, k1 : k2 + 1]))
     print(delta(ii, j1, k1, j2, k2))
 
     cv2.waitKey(0)
