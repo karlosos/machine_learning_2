@@ -59,6 +59,7 @@ def integral_image(i):
     #         if j > 0:
     #             ii[j, k] += ii[j-1, k]
     ii = np.apply_over_axes(np.cumsum, i, axes=[0, 1])
+    ii = ii.astype("int32")
     return ii
 
 
@@ -103,7 +104,32 @@ def haar_features_coordinates(hfs_indexes, s, p):
             white_w = white[3] * f_w
             hf_coords.append(np.array([white_j, white_k, white_h, white_w]))
         hfs_coords.append(np.array(hf_coords))
-    return np.array(hfs_coords)
+    return np.array(hfs_coords, dtype='object')
+
+
+def haar_feature(ii, hf_coords_window, j0, k0):
+    """
+    Calculate difference between area under squares
+    """
+    j, k, h, w = hf_coords_window[0]
+    j1 = int(j0 + j)
+    k1 = int(k0 + k)
+    j2 = int(j1 + h - 1)
+    k2 = int(k1 + w - 1)
+    sum_all = delta(ii, j1, k1, j2, k2)
+    area_all = h * w
+    sum_white = 0
+    area_white = 0
+    for j, k, h, w in hf_coords_window[1:]:
+        j1 = int(j0 + j)
+        k1 = int(k0 + k)
+        j2 = int(j1 + h - 1)
+        k2 = int(k1 + w - 1)
+        sum_white += delta(ii, j1, k1, j2, k2)
+        area_white += h * w
+    sum_black = sum_all - sum_white
+    area_black = area_all - area_white
+    return int(sum_white / area_white - sum_black / area_black)
 
 
 def draw_haar_feature_at(i, hf_coords, j0, k0):
@@ -133,6 +159,7 @@ if __name__ == "__main__":
     i1 = resize_image(i0)
     i = gray_image(i1)
     # cv2.imshow("test image", i)
+    ii = integral_image(i)
 
     s = 2
     p = 2
@@ -141,8 +168,8 @@ if __name__ == "__main__":
     print(len(hfs_indexes))
 
     hfs_coords = haar_features_coordinates(hfs_indexes, s=s, p=p)
-    h = 69
-    w = 69
+    h = 68
+    w = 68
     hfs_coords_window = w * hfs_coords
 
     # features demonstration on image and example window
@@ -153,12 +180,9 @@ if __name__ == "__main__":
     for hf_coords_window, index in zip(hfs_coords_window, hfs_indexes):
         i2 = draw_haar_feature_at(i1, hf_coords_window, j0, k0)
         cv2.rectangle(i2, p1, p2, (0, 0, 255), 1)
+        feature = haar_feature(ii, hf_coords_window, j0, k0)
+        print(f'{index}: {feature}')
         cv2.imshow("FEATURE DEMO", i2)
         cv2.waitKey(0)
-
-    ii = integral_image(i)
-    j1, k1, j2, k2 = (20, 50, 400, 450)
-    print(np.sum(i[j1 : j2 + 1, k1 : k2 + 1]))
-    print(delta(ii, j1, k1, j2, k2))
 
     cv2.waitKey(0)
