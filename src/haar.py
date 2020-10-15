@@ -3,7 +3,8 @@ import cv2
 
 DEF_HEIGHT = 480
 
-# each template defined via a list of white rectangles located within a unit square
+# each template defined via a list of white rectangles
+# located within a unit square
 # each rectangle given as a quadruple (j, k), (h, w)
 HAAR_TEMPLATES = [
     np.array([0.0, 0.0, 1.0, 0.5]),  # left-right edge
@@ -88,7 +89,7 @@ if __name__ == "__main__":
 
     ii = integral_image(i)
     j1, k1, j2, k2 = (20, 50, 400, 450)
-    print(np.sum(i[j1 : j2 + 1, k1 : k2 + 1]))
+    print(np.sum(i[j1:j2 + 1, k1:k2 + 1]))
     print(delta(ii, j1, k1, j2, k2))
 
     cv2.waitKey(0)
