@@ -78,7 +78,7 @@ def delta(ii, j1, k1, j2, k2):
 
 
 if __name__ == "__main__":
-    path = "../data/"
+    path = "./data/"
     i0 = cv2.imread(path + "000000.jpg")
     i1 = resize_image(i0)
     i = gray_image(i1)

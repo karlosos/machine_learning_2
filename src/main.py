@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 
 if __name__ == "__main__":
-    path = "../data/"
+    path = "./data/"
     i = cv2.imread(path + "000000.jpg")
     print(i)
 
