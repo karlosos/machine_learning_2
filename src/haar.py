@@ -96,35 +96,34 @@ def haar_features_coordinates(hfs_indexes, s, p):
         offset_j = 0.5 + p_j * jump_j - 0.5 * f_h
         offset_k = 0.5 + p_k * jump_k - 0.5 * f_w
         hf_coords = [np.array([offset_j, offset_k, f_h, f_w])]
-
         for white in HAAR_TEMPLATES[t]:
             white_j = offset_j + white[0] * f_h
             white_k = offset_k + white[1] * f_w
             white_h = white[2] * f_h
             white_w = white[3] * f_w
             hf_coords.append(np.array([white_j, white_k, white_h, white_w]))
-
-        hfs_coords.append(hf_coords)
-
+        hfs_coords.append(np.array(hf_coords))
     return np.array(hfs_coords)
 
 
 def draw_haar_feature_at(i, hf_coords, j0, k0):
     j, k, h, w = hf_coords[0]
-    j1 = int(j0 + j)
-    j2 = int(j1 + h - 1)
-    k1 = int(k0 + k)
-    k2 = int(k1 + w - 1)
+    j1 = round(j0 + j)
+    j2 = round(j1 + h - 1)
+    k1 = round(k0 + k)
+    k2 = round(k1 + w - 1)
+
     i_copy = i.copy()
     cv2.rectangle(i_copy, (k1, j1), (k2, j2), (0, 0, 0), cv2.FILLED)
     for c in hf_coords[1:]:
         j, k, h, w = c
-        j1 = int(j0 + j)
-        j2 = int(j1 + h - 1)
-        k1 = int(k0 + k)
-        k2 = int(k1 + w - 1)
+        j1 = round(j0 + j)
+        j2 = round(j1 + h - 1)
+        k1 = round(k0 + k)
+        k2 = round(k1 + w - 1)
         cv2.rectangle(i_copy, (k1, j1), (k2, j2), (255, 255, 255), cv2.FILLED)
-        cv2.addWeighted(i_copy, 0.6, i, 0.4, 0.0, i_copy)
+
+    cv2.addWeighted(i_copy, 0.6, i, 0.4, 0.0, i_copy)
     return i_copy
 
 
@@ -155,9 +154,7 @@ if __name__ == "__main__":
         i2 = draw_haar_feature_at(i1, hf_coords_window, j0, k0)
         cv2.rectangle(i2, p1, p2, (0, 0, 255), 1)
         cv2.imshow("FEATURE DEMO", i2)
-        #feature = haar_feature(ii, hf_coords_window, j0, k0)
-        #print("FEATURE INDEX: " + str(index) + ", VALUE: " + str(feature) + ".")
-        cv2.waitKey(200)
+        cv2.waitKey(0)
 
     ii = integral_image(i)
     j1, k1, j2, k2 = (20, 50, 400, 450)
