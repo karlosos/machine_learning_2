@@ -132,6 +132,29 @@ def haar_feature(ii, hf_coords_window, j0, k0):
     return int(sum_white / area_white - sum_black / area_black)
 
 
+def haar_features(ii, hfs_coords_window, j0, k0):
+    features = np.zeros(len(hfs_coords_window), dtype="int32")
+    for z, hf_coords_window in enumerate(hfs_coords_window):
+        features[z] = haar_feature(ii, hf_coords_window, j0, k0)
+    return features
+
+
+def iou(rectangle1, rectangle2):
+    j11, k11, j12, k12 = rectangle1
+    j21, k21, j22, k22 = rectangle2
+    intersection_j = j12 - max(j11, j21) if j21 > j11 else j22 - max(j21, j11)
+    intersection_j += 1
+    if intersection_j <= 0.0:
+        return 0
+    intersection_k = k12 - max(k11, k21) if k21 > k11 else k22 - max(k21, k11)
+    intersection_k += 1
+    if intersection_k <= 0.0:
+        return 0
+    intersection_area = intersection_j * intersection_k
+    union_area = (j12 - j11 + 1) * (k12 - k11 + 1) + (j22 - j21 + 1) * (k22 - k21 + 1) - intersection_area
+    return intersection_area / union_area
+
+
 def draw_haar_feature_at(i, hf_coords, j0, k0):
     j, k, h, w = hf_coords[0]
     j1 = round(j0 + j)
@@ -153,6 +176,94 @@ def draw_haar_feature_at(i, hf_coords, j0, k0):
     return i_copy
 
 
+def fddb_read_single_fold(path_root, path_fold_relative, n_negs_per_img, hfs_coords, verbose=False):
+    np.random.seed(0)    
+    
+    # settings for sampling negatives
+    w_relative_min = 0.1
+    w_relative_max = 0.35
+    w_relative_spread = w_relative_max - w_relative_min
+    neg_max_iou = 0.5
+    
+    X_list = []
+    y_list = []
+    
+    f = open(path_root + path_fold_relative, "r")
+    line = f.readline().strip()
+    n_img = 0
+    n_faces = 0
+    counter = 0
+    while line is not "":
+        file_name = path_root + line + ".jpg"
+        print(str(counter) + ": [" + file_name + "]")
+        counter += 1
+        i0 = cv2.imread(file_name)
+        i = gray_image(i0)
+        ii = integral_image(i)
+        n_img += 1        
+        n_img_faces = int(f.readline())        
+        img_faces_coords = []
+        for z in range(n_img_faces):
+            r_major, r_minor, angle, center_x, center_y, dummy_one = list(map(float, f.readline().strip().split()))
+            w = int(1.5 * r_major)            
+            j0 = int(center_y - w / 2) 
+            k0 = int(center_x - w / 2)
+            img_face_coords = np.array([j0, k0, j0 + w - 1, k0 + w - 1])
+            if j0 < 0 or k0 < 0 or j0 + w - 1 >= i.shape[0] or k0 + w - 1 >= i.shape[1]:
+                if verbose:
+                    print("WINDOW " + str(img_face_coords) + " OUT OF BOUNDS. [IGNORED]")
+                continue
+            n_faces += 1
+            img_faces_coords.append(img_face_coords)
+            if verbose:
+                p1 = (k0, j0)
+                p2 = (k0 + w - 1, j0 + w - 1)    
+                cv2.rectangle(i0, p1, p2, (0, 0, 255), 1)            
+            hfs_coords_window = w * hfs_coords
+            feats = haar_features(ii, hfs_coords_window, j0, k0)
+            if verbose:
+                print("POSITIVE WINDOW " + str(img_face_coords) + " ACCEPTED. FEATURES: " + str(feats) + ".") 
+            X_list.append(feats)
+            y_list.append(1)
+        if verbose:      
+            cv2.imshow("FDDB", i0)
+            cv2.waitKey(0)
+        for z in range(n_negs_per_img):
+            while True:
+                w = int((np.random.random() * w_relative_spread + w_relative_min) * i.shape[0])
+                j0 = int(np.random.random() * (i.shape[0] - w + 1))
+                k0 = int(np.random.random() * (i.shape[1] - w + 1))                 
+                patch = np.array([j0, k0, j0 + w - 1, k0 + w - 1])
+                ious = list(map(lambda ifc : iou(patch, ifc), img_faces_coords))
+                max_iou = max(ious) if len(ious) > 0 else 0.0
+                if max_iou < neg_max_iou:
+                    hfs_coords_window = w * hfs_coords
+                    feats = haar_features(ii, hfs_coords_window, j0, k0)
+                    X_list.append(feats)
+                    y_list.append(-1)                    
+                    if verbose:
+                        print("NEGATIVE WINDOW " + str(patch) + " ACCEPTED. FEATURES: " + str(feats) + ".")
+                        p1 = (k0, j0)
+                        p2 = (k0 + w - 1, j0 + w - 1)            
+                        cv2.rectangle(i0, p1, p2, (0, 255, 0), 1)
+                    break
+                else:                    
+                    if verbose:
+                        print("NEGATIVE WINDOW " + str(patch) + " IGNORED. [MAX IOU: " + str(max_iou) + "]")
+                        p1 = (k0, j0)
+                        p2 = (k0 + w - 1, j0 + w - 1)
+                        cv2.rectangle(i0, p1, p2, (255, 255, 0), 1)
+        if verbose: 
+            cv2.imshow("FDDB", i0)
+            cv2.waitKey(0)
+        line = f.readline().strip()
+    print("IMAGES IN THIS FOLD: " + str(n_img) + ".")
+    print("ACCEPTED FACES IN THIS FOLD: " + str(n_faces) + ".")
+    f.close()
+    X = np.stack(X_list)
+    y = np.stack(y_list)
+    return X, y
+
 if __name__ == "__main__":
     path = "./data/"
     i0 = cv2.imread(path + "000000.jpg")
@@ -161,7 +272,7 @@ if __name__ == "__main__":
     # cv2.imshow("test image", i)
     ii = integral_image(i)
 
-    s = 2
+    s = 3
     p = 2
 
     hfs_indexes = haar_features_indexes(s, p)
@@ -173,16 +284,22 @@ if __name__ == "__main__":
     hfs_coords_window = w * hfs_coords
 
     # features demonstration on image and example window
-    j0 = 160
-    k0 = 280
-    p1 = (k0, j0)
-    p2 = (k0 + w - 1, j0 + h - 1)
-    for hf_coords_window, index in zip(hfs_coords_window, hfs_indexes):
-        i2 = draw_haar_feature_at(i1, hf_coords_window, j0, k0)
-        cv2.rectangle(i2, p1, p2, (0, 0, 255), 1)
-        feature = haar_feature(ii, hf_coords_window, j0, k0)
-        print(f'{index}: {feature}')
-        cv2.imshow("FEATURE DEMO", i2)
-        cv2.waitKey(0)
+    # j0 = 160
+    # k0 = 280
+    # p1 = (k0, j0)
+    # p2 = (k0 + w - 1, j0 + h - 1)
+    # for hf_coords_window, index in zip(hfs_coords_window, hfs_indexes):
+    #     i2 = draw_haar_feature_at(i1, hf_coords_window, j0, k0)
+    #     cv2.rectangle(i2, p1, p2, (0, 0, 255), 1)
+    #     feature = haar_feature(ii, hf_coords_window, j0, k0)
+    #     print(f'{index}: {feature}')
+    #     cv2.imshow("FEATURE DEMO", i2)
+    #     cv2.waitKey(0)
 
-    cv2.waitKey(0)
+    # cv2.waitKey(0)
+
+    # path_fddb_root = "c:/Dev/machine_learning_2/data/large/"
+    # X, y = fddb_read_single_fold(path_fddb_root, "FDDB-folds/FDDB-fold-01-ellipseList.txt", 10, hfs_coords, verbose=True)
+    # print(X.shape, y.shape)
+
+    print(iou([0, 0, 5, 5], [0, 0, 10, 10]))
