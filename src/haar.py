@@ -139,14 +139,14 @@ def haar_features(ii, hfs_coords_window, j0, k0):
     return features
 
 
-def iou(rectangle1, rectangle2):
-    j11, k11, j12, k12 = rectangle1
-    j21, k21, j22, k22 = rectangle2
-    intersection_j = j12 - max(j11, j21) if j21 > j11 else j22 - max(j21, j11)
+def iou(coords_1, coords_2):
+    j11, k11, j12, k12 = coords_1
+    j21, k21, j22, k22 = coords_2
+    intersection_j = min(j12, j22) - max(j11, j21)
     intersection_j += 1
     if intersection_j <= 0.0:
         return 0
-    intersection_k = k12 - max(k11, k21) if k21 > k11 else k22 - max(k21, k11)
+    intersection_k = min(k12, k22) - max(k11, k21)
     intersection_k += 1
     if intersection_k <= 0.0:
         return 0
@@ -298,8 +298,7 @@ if __name__ == "__main__":
 
     # cv2.waitKey(0)
 
-    # path_fddb_root = "c:/Dev/machine_learning_2/data/large/"
-    # X, y = fddb_read_single_fold(path_fddb_root, "FDDB-folds/FDDB-fold-01-ellipseList.txt", 10, hfs_coords, verbose=True)
-    # print(X.shape, y.shape)
-
-    print(iou([0, 0, 5, 5], [0, 0, 10, 10]))
+    # data loadingj
+    path_fddb_root = "c:/Dev/machine_learning_2/data/large/"
+    X, y = fddb_read_single_fold(path_fddb_root, "FDDB-folds/FDDB-fold-01-ellipseList.txt", 10, hfs_coords, verbose=True)
+    print(X.shape, y.shape)
