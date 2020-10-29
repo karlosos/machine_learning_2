@@ -136,6 +136,11 @@ def haar_features(ii, hfs_coords_window_subset, j0, k0, n, fi=None):
     for i, hf_coords_window in enumerate(hfs_coords_window_subset):
         features[fi[i]] = haar_feature(ii, hf_coords_window, j0, k0)
     return features            
+
+def haar_features_2(ii, hfs_coords_window_subset, j0, k0, n, fi, features):
+    for i, hf_coords_window in enumerate(hfs_coords_window_subset):
+        features[fi[i]] = haar_feature(ii, hf_coords_window, j0, k0)
+    return features            
     
 def draw_haar_feature_at(i, hf_coords, j0, k0):    
     j, k, h, w = hf_coords[0]
@@ -372,8 +377,14 @@ def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
         hfs_coords_window_subset = np.array(list(map(lambda npa: npa.astype("int32") , hfs_coords_window_subset)))            
         for j in range(j_start, ii.shape[0] - w + 1, dj):
             for k in range(k_start, ii.shape[1] - w + 1, dk):
-                features = haar_features(ii, hfs_coords_window_subset, j, k, n, fi)
+                # t1_extraction = time.time()
+                # features = haar_features(ii, hfs_coords_window_subset, j, k, n, fi)
+                features = haar_features_2(ii, hfs_coords_window_subset, j, k, n, fi, features)
+                # t2_extraction = time.time()
+                # t1_decision = time.time()
                 decision = clf.decision_function(np.array([features]))[0]
+                # t2_decision = time.time()
+                # print(f"EXTRACTION: {t2_extraction-t1_extraction} s., DECISION: {t2_decision - t1_decision}")
                 if decision > clf_threshold:
                     print("!DETECTION AT " + str((j, k)))
                     cv2.rectangle(i_resized, (k, j), (k + w - 1, j + w - 1), (0, 0, 255), 1)
@@ -472,7 +483,9 @@ if __name__ == "__main__":
     i = cv2.imread(path_data_root + "000001.jpg")
     hfs_coords_subset = hfs_coords[fi]
     i_out = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0.035)
-    cv2.imshow(f"DETECTION OUTCOME {i_out}")
+    cv2.imshow("DETECTION OUTCOME", i_out)
     cv2.waitKey(0)
     
     print("DONE.")    
+
+    # TODO: wariant równoległy detect 11:41
