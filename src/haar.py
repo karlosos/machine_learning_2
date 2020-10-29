@@ -299,6 +299,6 @@ if __name__ == "__main__":
     # cv2.waitKey(0)
 
     # data loadingj
-    path_fddb_root = "c:/Dev/machine_learning_2/data/large/"
+    path_fddb_root = "c:/Dev/machine_learning_2/data/"
     X, y = fddb_read_single_fold(path_fddb_root, "FDDB-folds/FDDB-fold-01-ellipseList.txt", 10, hfs_coords, verbose=True)
     print(X.shape, y.shape)
