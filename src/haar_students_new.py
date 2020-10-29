@@ -9,7 +9,7 @@ from numba import jit
 DEF_HEIGHT = 480
 
 DETECTION_SCALES = 4
-DETECTION_W_MIN = 48
+DETECTION_W_MIN = 64
 DETECTION_WINDOW_GROWTH = 1.2
 DETECTION_WINDOW_JUMP = 0.1
 
@@ -339,6 +339,54 @@ def unpickle_all(fname):
     print("UNPICKLE DONE. [TIME: " + str(t2 - t1) + " s.]")
     return some_list 
 
+def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
+    i_resized = resize_image(i)
+    i_gray = gray_image(i_resized)
+    ii = integral_image(i_gray)
+    features = np.zeros(n)
+
+    n_windows_max = 0
+    for s in range (DETECTION_SCALES):
+        w = int(np.round(DETECTION_W_MIN * DETECTION_WINDOW_GROWTH**s))
+        dj = int(np.round(w * DETECTION_WINDOW_JUMP))
+        dk = dj
+        j_start = int((ii.shape[0] % dj) / 2)
+        k_start = int((ii.shape[1] % dk) / 2)
+        for j in range(j_start, ii.shape[0] - w + 1, dj):
+            for k in range(k_start, ii.shape[1] - w + 1, dk):
+                n_windows_max += 1
+    print(f"WINDOWS TO BE CHECKED: {n_windows_max}")
+
+    progress_step = int(np.round(0.01 * n_windows_max))
+
+    t1 = time.time()
+    n_windows = 0
+    for s in range (DETECTION_SCALES):
+        w = int(np.round(DETECTION_W_MIN * DETECTION_WINDOW_GROWTH**s))
+        dj = int(np.round(w * DETECTION_WINDOW_JUMP))
+        dk = dj
+        print("!S = " + str(s) + ", DJ = " + str(dj) + ", DK = " + str(dk) + "...")
+        j_start = int((ii.shape[0] % dj) / 2)
+        k_start = int((ii.shape[1] % dk) / 2)
+        hfs_coords_window_subset = w * hfs_coords_subset
+        hfs_coords_window_subset = np.array(list(map(lambda npa: npa.astype("int32") , hfs_coords_window_subset)))            
+        for j in range(j_start, ii.shape[0] - w + 1, dj):
+            for k in range(k_start, ii.shape[1] - w + 1, dk):
+                features = haar_features(ii, hfs_coords_window_subset, j, k, n, fi)
+                decision = clf.decision_function(np.array([features]))[0]
+                if decision > clf_threshold:
+                    print("!DETECTION AT " + str((j, k)))
+                    cv2.rectangle(i_resized, (k, j), (k + w - 1, j + w - 1), (0, 0, 255), 1)
+                n_windows += 1
+                if n_windows % progress_step == 0:
+                    print(f"PROGRESS: {np.round(n_windows / n_windows_max, 2)}")
+    t2 = time.time()
+    total_time = t2 - t1
+    print(f"TOTAL TIME: {total_time} s.")
+    time_per_window = total_time / n_windows
+    print(f"TIME PER WINDOW: {time_per_window} s.")
+    return i_resized
+
 if __name__ == "__main__":
     print("STARTING...")     
     path_data_root = "../data/"
@@ -375,12 +423,12 @@ if __name__ == "__main__":
 #         print("FEATURE INDEX: " + str(index) + ", VALUE: " + str(feature) + ".")         
 #         cv2.waitKey(0)
     
-    print("PREPARING DATA...");
-    t1 = time.time()
-    X_train, y_train, X_test, y_test = fddb_data("c:/Dev/machine_learning_2/data/large/", hfs_coords, 10, n)
-    t2 = time.time()
-    print("PREPARING DATA DONE IN " + str(t2 - t1) + " s.")
-    pickle_all(path_data, [X_train, y_train, X_test, y_test])   
+    # print("PREPARING DATA...");
+    # t1 = time.time()
+    # X_train, y_train, X_test, y_test = fddb_data("c:/Dev/machine_learning_2/data/large/", hfs_coords, 10, n)
+    # t2 = time.time()
+    # print("PREPARING DATA DONE IN " + str(t2 - t1) + " s.")
+    # pickle_all(path_data, [X_train, y_train, X_test, y_test])   
   
     X_train, y_train, X_test, y_test = unpickle_all(path_data)
     train_index_pos = np.where(y_train == 1)[0]
@@ -390,35 +438,41 @@ if __name__ == "__main__":
     test_index_neg = np.where(y_test == -1)[0]
     print("X_TEST: " + str(X_test.shape) + " [POSITIVES: " + str(test_index_pos.size) + "]")
          
-    T = 128
-    MD = 1
+    T = 128 # 128 słabych klasyfikatorów
+    MD = 1 # maximym depth 
     clf_description = data_description + "_T_" + str(T) + "_MD_" + str(MD)
     path_clf = path_clfs_root + "fddb_" + clf_description + ".pkl"    
     
-    clf = AdaBoostClassifier(n_estimators=T, random_state=0, base_estimator=DecisionTreeClassifier(max_depth=MD))
-    print("LEARNING...");   
-    t1 = time.time()
-    clf.fit(X_train, y_train)
-    t2 = time.time()
-    print("LEARNING DONE IN " + str(t2 - t1) + " s.")
-    pickle_all(path_clf, [clf])
+    # clf = AdaBoostClassifier(n_estimators=T, random_state=0, base_estimator=DecisionTreeClassifier(max_depth=MD))
+    # print("LEARNING...");   
+    # t1 = time.time()
+    # clf.fit(X_train, y_train)
+    # t2 = time.time()
+    # print("LEARNING DONE IN " + str(t2 - t1) + " s.")
+    # pickle_all(path_clf, [clf])
 
     clf = unpickle_all(path_clf)[0]    
     fi = adaboost_features_indexes(n, clf)
     print("SELECTED FEATURES: " + str(len(fi)))
 
-    print("ACCURACY MEASURING...");   
-    t1 = time.time()
-    print("TRAIN ACC: " + str(clf.score(X_train, y_train)))
-    y_test_df = clf.decision_function(X_test)
-    y_test_pred = (y_test_df > 0.0) * 2 - 1
-    acc = np.sum(y_test == y_test_pred) / len(y_test)
-    print("TEST ACC: " + str(acc))    
-    sens = np.sum(y_test[test_index_pos] == y_test_pred[test_index_pos]) / len(test_index_pos)
-    far = 1.0 - np.sum(y_test[test_index_neg] == y_test_pred[test_index_neg]) / len(test_index_neg)
-    print("TEST SENSITIVITY: " + str(sens))
-    print("TEST FAR: " + str(far))
-    t2 = time.time()
-    print("ACCURACY MEASUREING DONE IN " + str(t2 - t1) + " s.")
+    # print("ACCURACY MEASURING...");   
+    # t1 = time.time()
+    # print("TRAIN ACC: " + str(clf.score(X_train, y_train)))
+    # y_test_df = clf.decision_function(X_test)
+    # y_test_pred = (y_test_df > 0.0) * 2 - 1
+    # acc = np.sum(y_test == y_test_pred) / len(y_test)
+    # print("TEST ACC: " + str(acc))    
+    # sens = np.sum(y_test[test_index_pos] == y_test_pred[test_index_pos]) / len(test_index_pos)
+    # far = 1.0 - np.sum(y_test[test_index_neg] == y_test_pred[test_index_neg]) / len(test_index_neg)
+    # print("TEST SENSITIVITY: " + str(sens))
+    # print("TEST FAR: " + str(far))
+    # t2 = time.time()
+    # print("ACCURACY MEASUREING DONE IN " + str(t2 - t1) + " s.")
+
+    i = cv2.imread(path_data_root + "000001.jpg")
+    hfs_coords_subset = hfs_coords[fi]
+    i_out = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0.035)
+    cv2.imshow(f"DETECTION OUTCOME {i_out}")
+    cv2.waitKey(0)
     
     print("DONE.")    
