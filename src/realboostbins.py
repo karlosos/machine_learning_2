@@ -5,6 +5,7 @@ import time
 class RealBoostBins(BaseEstimator, ClassifierMixin):
     """Działa tylko dla problemów binarnych"""
     OUTLIER_RATIO = 0.01
+    LOGIT_MAX = 2
 
     def __init__(self, T=128, B=8, ):
         self.T_ = T  # liczba rund
@@ -14,6 +15,18 @@ class RealBoostBins(BaseEstimator, ClassifierMixin):
         self.class_labels_ = None
         self.mins_ = None  # minima oprócz outlierów o rozmiarze ile cech
         self.maxes_ = None
+
+    def calculate_logits(self, W_neg, W_pos):
+        B = len(W_neg)
+        logits = np.zeros(B)
+        for b in range(B):
+            if W_pos[b] > 0.0 and W_neg[b] == 0:
+                logits[b] = self.LOGIT_MAX
+            elif W_neg[b] > 0.0 and W_pos[b] == 0.0:
+                logits[b] = -self.LOGIT_MAX
+            elif W_neg[b] > 0.0 and W_pos[b] > 0.0:
+                logits[b] = 0.5 * np.log(W_pos[b] / W_neg[b])
+        return logits
 
     def fit(self, X, y):
         m, n = X.shape
@@ -44,10 +57,13 @@ class RealBoostBins(BaseEstimator, ClassifierMixin):
         t2 = time.time()
         print(f"BINNING DONE. [TIME: {t2-t1} S]")
 
+        print("BOOSTING...")
         w = np.ones(m) / m
         for t in range(self.T_):
+            print(f"ROUND {t+1}/{self.T_}")
             j_best = -1
-            err_exp = np.inf
+            err_exp_best = np.inf
+            logits_best = None
             for j in range(n):
                 W_neg = np.zeros(self.B_)
                 W_pos = np.zeros(self.B_)
@@ -57,4 +73,19 @@ class RealBoostBins(BaseEstimator, ClassifierMixin):
                     indexes_j_in_b_pos = np.intersect1d(indexes_j_in_b, indexes_pos)
                     W_neg[b] = w[indexes_j_in_b_neg].sum()
                     W_pos[b] = w[indexes_j_in_b_pos].sum()
-                    pass
+                logits = self.calculate_logits(W_neg, W_pos)
+                err_exp = np.sum(w * np.exp(-yy * logits[X_binned[:, j]]))  # w[i] * np.exp(-yy[i] * f[i])
+                if err_exp < err_exp_best:
+                    err_exp_best = err_exp
+                    j_best = j
+                    logits_best = logits
+            print(f"BEST FEATURE: {j_best}, ERR EXP BEST + {err_exp_best}")
+            print(f"BEST LOGITS: {logits_best}")
+            self.features_[t] = j_best
+            self.logits_[t, :] = logits_best
+            # rewazenia
+            break
+
+            # TODO:
+            #  - wygenerowac mniejszy zbior, kilkaset cech
+            #  - zrównoleglić detect
