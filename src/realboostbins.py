@@ -36,3 +36,15 @@ class RealBoostBins(BaseEstimator, ClassifierMixin):
             self.maxes_[j] = feature[i_max]
         t2 = time.time()
         print(f"SORTING FEATURES TO FIND RANGED DONE. [TIME: {t2-t1} S]")
+
+        print("BINNING ... ")
+        t1 = time.time()
+        X_binned = np.floor((X - self.mins_) / (self.maxes_ - self.mins_) * self.B_).astype("int32")
+        X_binned = np.clip(X_binned, 0, self.B_ - 1)
+        t2 = time.time()
+        print(f"BINNING DONE. [TIME: {t2-t1} S]")
+
+        for t in range(self.T_):
+            for j in range(n):
+                for b in range(self.B_):
+                    pass
