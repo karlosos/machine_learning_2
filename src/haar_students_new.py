@@ -355,8 +355,8 @@ def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
         w = int(np.round(DETECTION_W_MIN * DETECTION_WINDOW_GROWTH**s))
         dj = int(np.round(w * DETECTION_WINDOW_JUMP))
         dk = dj
-        j_start = int((ii.shape[0] % dj) / 2)
-        k_start = int((ii.shape[1] % dk) / 2)
+        j_start = int(((ii.shape[0] - w) % dj) / 2)
+        k_start = int(((ii.shape[1] - w) % dk) / 2)
         for j in range(j_start, ii.shape[0] - w + 1, dj):
             for k in range(k_start, ii.shape[1] - w + 1, dk):
                 n_windows_max += 1
@@ -371,10 +371,11 @@ def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
         dj = int(np.round(w * DETECTION_WINDOW_JUMP))
         dk = dj
         print("!S = " + str(s) + ", DJ = " + str(dj) + ", DK = " + str(dk) + "...")
-        j_start = int((ii.shape[0] % dj) / 2)
-        k_start = int((ii.shape[1] % dk) / 2)
+        j_start = int(((ii.shape[0] - w) % dj) / 2)
+        k_start = int(((ii.shape[1] - w) % dk) / 2)
         hfs_coords_window_subset = w * hfs_coords_subset
-        hfs_coords_window_subset = np.array(list(map(lambda npa: npa.astype("int32") , hfs_coords_window_subset)))            
+        hfs_coords_window_subset = np.array(list(map(lambda npa: npa.astype("int32"), hfs_coords_window_subset)))
+        print(f"Loop from {j_start} to {ii.shape[0] - w + 1} step: {dj}")
         for j in range(j_start, ii.shape[0] - w + 1, dj):
             for k in range(k_start, ii.shape[1] - w + 1, dk):
                 # t1_extraction = time.time()
