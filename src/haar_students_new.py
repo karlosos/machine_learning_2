@@ -5,6 +5,7 @@ import pickle
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
 from numba import jit
+from realboostbins import RealBoostBins
 
 DEF_HEIGHT = 480
 
@@ -450,11 +451,10 @@ if __name__ == "__main__":
     test_index_neg = np.where(y_test == -1)[0]
     print("X_TEST: " + str(X_test.shape) + " [POSITIVES: " + str(test_index_pos.size) + "]")
          
-    T = 128 # 128 słabych klasyfikatorów
-    MD = 1 # maximym depth 
-    clf_description = data_description + "_T_" + str(T) + "_MD_" + str(MD)
-    path_clf = path_clfs_root + "fddb_" + clf_description + ".pkl"    
-    
+    # T = 128 # 128 słabych klasyfikatorów
+    # MD = 1 # maximym depth
+    # clf_description = data_description + "_T_" + str(T) + "_MD_" + str(MD)
+    # path_clf = path_clfs_root + "fddb_ada_" + clf_description + ".pkl"
     # clf = AdaBoostClassifier(n_estimators=T, random_state=0, base_estimator=DecisionTreeClassifier(max_depth=MD))
     # print("LEARNING...");   
     # t1 = time.time()
@@ -462,12 +462,22 @@ if __name__ == "__main__":
     # t2 = time.time()
     # print("LEARNING DONE IN " + str(t2 - t1) + " s.")
     # pickle_all(path_clf, [clf])
+    # clf = unpickle_all(path_clf)[0]
+    # fi = adaboost_features_indexes(n, clf)
+    # print("SELECTED FEATURES: " + str(len(fi)))
 
-    clf = unpickle_all(path_clf)[0]    
-    fi = adaboost_features_indexes(n, clf)
-    print("SELECTED FEATURES: " + str(len(fi)))
+    T = 128  # 128 słabych klasyfikatorów
+    B = 1  # maximym depth
+    clf_description = data_description + "_T_" + str(T) + "_B_" + str(B)
+    path_clf = path_clfs_root + "fddb_real_" + clf_description + ".pkl"
+    clf = RealBoostBins(T, B)
+    print("LEARNING...")
+    t1 = time.time()
+    clf.fit(X_train, y_train)
+    t2 = time.time()
+    print(f"LEARNING DONE IN {t2 - t1} s.")
 
-    # print("ACCURACY MEASURING...");   
+    # print("ACCURACY MEASURING...");
     # t1 = time.time()
     # print("TRAIN ACC: " + str(clf.score(X_train, y_train)))
     # y_test_df = clf.decision_function(X_test)
@@ -481,11 +491,11 @@ if __name__ == "__main__":
     # t2 = time.time()
     # print("ACCURACY MEASUREING DONE IN " + str(t2 - t1) + " s.")
 
-    i = cv2.imread(path_data_root + "000001.jpg")
-    hfs_coords_subset = hfs_coords[fi]
-    i_out = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0.035)
-    cv2.imshow("DETECTION OUTCOME", i_out)
-    cv2.waitKey(0)
+    # i = cv2.imread(path_data_root + "000001.jpg")
+    # hfs_coords_subset = hfs_coords[fi]
+    # i_out = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0.035)
+    # cv2.imshow("DETECTION OUTCOME", i_out)
+    # cv2.waitKey(0)
     
     print("DONE.")    
 
