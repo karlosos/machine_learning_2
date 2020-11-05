@@ -44,7 +44,17 @@ class RealBoostBins(BaseEstimator, ClassifierMixin):
         t2 = time.time()
         print(f"BINNING DONE. [TIME: {t2-t1} S]")
 
+        w = np.ones(m) / m
         for t in range(self.T_):
+            j_best = -1
+            err_exp = np.inf
             for j in range(n):
+                W_neg = np.zeros(self.B_)
+                W_pos = np.zeros(self.B_)
                 for b in range(self.B_):
+                    indexes_j_in_b = np.where(X_binned[:, j] == b)[0]
+                    indexes_j_in_b_neg = np.intersect1d(indexes_j_in_b, indexes_neg)
+                    indexes_j_in_b_pos = np.intersect1d(indexes_j_in_b, indexes_pos)
+                    W_neg[b] = w[indexes_j_in_b_neg].sum()
+                    W_pos[b] = w[indexes_j_in_b_pos].sum()
                     pass
