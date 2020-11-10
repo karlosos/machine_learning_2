@@ -346,6 +346,7 @@ def unpickle_all(fname):
     return some_list 
 
 def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
+    detections = []
     i_resized = resize_image(i)
     i_gray = gray_image(i_resized)
     ii = integral_image(i_gray)
@@ -391,7 +392,8 @@ def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
                 # print(f"EXTRACTION: {t2_extraction-t1_extraction} s., DECISION: {t2_decision - t1_decision}")
                 if decision > clf_threshold:
                     print("!DETECTION AT " + str((j, k)))
-                    cv2.rectangle(i_resized, (k, j), (k + w - 1, j + w - 1), (0, 0, 255), 1)
+                    # cv2.rectangle(i_resized, (k, j), (k + w - 1, j + w - 1), (0, 0, 255), 1)
+                    detections.append(([k, j, w], decision))
                 n_windows += 1
                 # if n_windows % progress_step == 0:
                 #     print(f"PROGRESS: {np.round(n_windows / n_windows_max, 2)}")
@@ -400,7 +402,15 @@ def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
     print(f"TOTAL TIME: {total_time} s.")
     time_per_window = total_time / n_windows
     print(f"TIME PER WINDOW: {time_per_window} s.")
+    return detections
+
+def draw_bounding_boxes(img, detections):
+    i_resized = resize_image(i)
+    for detection in detections:
+        (k, j, w)= detection[0]
+        cv2.rectangle(i_resized, (k, j), (k + w - 1, j + w - 1), (0, 0, 255), 1)
     return i_resized
+
 
 if __name__ == "__main__":
     print("STARTING...")     
@@ -499,7 +509,8 @@ if __name__ == "__main__":
 
     i = cv2.imread(path_data_root + "000000.jpg")
     hfs_coords_subset = hfs_coords[fi]
-    i_out = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=2.5)
+    detections = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=2.5)
+    i_out = draw_bounding_boxes(i, detections)
     cv2.imshow("DETECTION OUTCOME", i_out)
     cv2.waitKey(0)
     
