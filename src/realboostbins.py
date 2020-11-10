@@ -97,8 +97,8 @@ class RealBoostBins(BaseEstimator, ClassifierMixin):
     def decision_function(self, X):
         m = X.shape[0]
         X_slice = X[:, self.features_]  # wycięcie do wybranych kolumn z boostingu
-        mins = self.mins_[:, self.features_]
-        maxes = self.maxes_[:, self.features_]
+        mins = self.mins_[self.features_]
+        maxes = self.maxes_[self.features_]
         X_binned = np.floor((X_slice - mins) / (maxes - mins) * self.B_).astype("int32")
         X_binned = np.clip(X_binned, 0, self.B_ - 1)
         F = np.zeros(m)

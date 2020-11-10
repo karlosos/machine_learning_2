@@ -470,15 +470,15 @@ if __name__ == "__main__":
     B = 8  # maximum depth
     clf_description = data_description + "_T_" + str(T) + "_B_" + str(B)
     path_clf = path_clfs_root + "fddb_real_" + clf_description + ".pkl"
-    clf = RealBoostBins(T, B)
-    print("LEARNING...")
-    t1 = time.time()
-    clf.fit(X_train, y_train)
-    t2 = time.time()
-    print(f"LEARNING DONE IN {t2 - t1} s.")
-    pickle_all(path_clf, [clf])
+    # clf = RealBoostBins(T, B)
+    # print("LEARNING...")
+    # t1 = time.time()
+    # clf.fit(X_train, y_train)
+    # t2 = time.time()
+    # print(f"LEARNING DONE IN {t2 - t1} s.")
+    # pickle_all(path_clf, [clf])
     clf = unpickle_all(path_clf)[0]
-    fi = np.unique(clf.features_)
+    fi = np.unique(clf.features_).astype("int32")
     print(f"SELECTED FEATURES {len(fi)}")
 
     # print("ACCURACY MEASURING...");
@@ -495,11 +495,11 @@ if __name__ == "__main__":
     # t2 = time.time()
     # print("ACCURACY MEASUREING DONE IN " + str(t2 - t1) + " s.")
 
-    # i = cv2.imread(path_data_root + "000001.jpg")
-    # hfs_coords_subset = hfs_coords[fi]
-    # i_out = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0.035)
-    # cv2.imshow("DETECTION OUTCOME", i_out)
-    # cv2.waitKey(0)
+    i = cv2.imread(path_data_root + "000001.jpg")
+    hfs_coords_subset = hfs_coords[fi]
+    i_out = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=2.5)
+    cv2.imshow("DETECTION OUTCOME", i_out)
+    cv2.waitKey(0)
     
     print("DONE.")    
 
