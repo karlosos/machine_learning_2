@@ -57,6 +57,18 @@ class RealBoostBins(BaseEstimator, ClassifierMixin):
         t2 = time.time()
         print(f"BINNING DONE. [TIME: {t2-t1} S]")
 
+        print("INDEXER")
+        t1 = time.time()
+        indexer_neg = np.empty((n, self.B_), "object")
+        indexer_pos = np.empty((n, self.B_), "object")
+        for j in range(n):
+            for b in range(self.B_):
+                indexes_j_in_b = np.where(X_binned[:, j] == b)[0]
+                indexer_neg[j, b] = np.intersect1d(indexes_j_in_b, indexes_neg)
+                indexer_pos[j, b] = np.intersect1d(indexes_j_in_b, indexes_pos)
+        t2 = time.time()
+        print(f"INDEXER DONE. [TIME: {t2-t1} S]")
+
         print("BOOSTING...")
         w = np.ones(m) / m
         for t in range(self.T_):
@@ -68,11 +80,8 @@ class RealBoostBins(BaseEstimator, ClassifierMixin):
                 W_neg = np.zeros(self.B_)
                 W_pos = np.zeros(self.B_)
                 for b in range(self.B_):
-                    indexes_j_in_b = np.where(X_binned[:, j] == b)[0]
-                    indexes_j_in_b_neg = np.intersect1d(indexes_j_in_b, indexes_neg)
-                    indexes_j_in_b_pos = np.intersect1d(indexes_j_in_b, indexes_pos)
-                    W_neg[b] = w[indexes_j_in_b_neg].sum()
-                    W_pos[b] = w[indexes_j_in_b_pos].sum()
+                    W_neg[b] = w[indexer_neg[j, b]].sum()
+                    W_pos[b] = w[indexer_pos[j, b]].sum()
                 logits = self.calculate_logits(W_neg, W_pos)
                 err_exp = np.sum(w * np.exp(-yy * logits[X_binned[:, j]]))  # w[i] * np.exp(-yy[i] * f[i])
                 if err_exp < err_exp_best:
@@ -80,12 +89,15 @@ class RealBoostBins(BaseEstimator, ClassifierMixin):
                     j_best = j
                     logits_best = logits
             print(f"BEST FEATURE: {j_best}, ERR EXP BEST + {err_exp_best}")
-            print(f"BEST LOGITS: {logits_best}")
+            print(f"BEST LOGITS: {np.round(logits_best, 2)}")
             self.features_[t] = j_best
             self.logits_[t, :] = logits_best
-            # rewazenia
+            w = w * np.exp(-logits_best[X_binned[:, j_best]] * yy) / err_exp_best   # rewazenie, Z = err_exp_best
             break
 
             # TODO:
-            #  - wygenerowac mniejszy zbior, kilkaset cech
-            #  - zrównoleglić detect
+            #  - [x] reważenie wag
+            #  - [x] przyspieszenie intersection
+            #  - [ ] wygenerowac mniejszy zbior, kilkaset cech
+            #  - [ ] zrównoleglić detect
+            #  - [x] inna cecha może wyjście 12:24? BEST FEATURE: 6716 - jest dobrze

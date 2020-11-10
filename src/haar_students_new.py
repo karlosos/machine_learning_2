@@ -467,7 +467,7 @@ if __name__ == "__main__":
     # print("SELECTED FEATURES: " + str(len(fi)))
 
     T = 128  # 128 słabych klasyfikatorów
-    B = 1  # maximym depth
+    B = 8  # maximum depth
     clf_description = data_description + "_T_" + str(T) + "_B_" + str(B)
     path_clf = path_clfs_root + "fddb_real_" + clf_description + ".pkl"
     clf = RealBoostBins(T, B)
