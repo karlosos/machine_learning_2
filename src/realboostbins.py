@@ -93,11 +93,27 @@ class RealBoostBins(BaseEstimator, ClassifierMixin):
             self.features_[t] = j_best
             self.logits_[t, :] = logits_best
             w = w * np.exp(-logits_best[X_binned[:, j_best]] * yy) / err_exp_best   # rewazenie, Z = err_exp_best
-            break
 
-            # TODO:
-            #  - [x] reważenie wag
-            #  - [x] przyspieszenie intersection
-            #  - [ ] wygenerowac mniejszy zbior, kilkaset cech
-            #  - [ ] zrównoleglić detect
-            #  - [x] inna cecha może wyjście 12:24? BEST FEATURE: 6716 - jest dobrze
+    def decision_function(self, X):
+        m = X.shape[0]
+        X_slice = X[:, self.features_]  # wycięcie do wybranych kolumn z boostingu
+        mins = self.mins_[:, self.features_]
+        maxes = self.maxes_[:, self.features_]
+        X_binned = np.floor((X_slice - mins) / (maxes - mins) * self.B_).astype("int32")
+        X_binned = np.clip(X_binned, 0, self.B_ - 1)
+        F = np.zeros(m)
+        for i in range(m):
+            F[i] = self.logits_[np.arange(self.T_), X_binned[i, :]].sum()
+        return F
+
+    def predict(self, X):
+        F = self.decision_function(X)
+        return self.class_labels_[F > 0.0]
+
+    # TODO:
+    #  - [x] reważenie wag
+    #  - [x] przyspieszenie intersection
+    #  - [ ] predict
+    #  - [ ] wygenerowac mniejszy zbior, kilkaset cech
+    #  - [ ] zrównoleglić detect
+    #  - [x] inna cecha może wyjście 12:24? BEST FEATURE: 6716 - jest dobrze

@@ -452,7 +452,7 @@ if __name__ == "__main__":
     print("X_TEST: " + str(X_test.shape) + " [POSITIVES: " + str(test_index_pos.size) + "]")
          
     # T = 128 # 128 słabych klasyfikatorów
-    # MD = 1 # maximym depth
+    # MD = 1 # maximum depth
     # clf_description = data_description + "_T_" + str(T) + "_MD_" + str(MD)
     # path_clf = path_clfs_root + "fddb_ada_" + clf_description + ".pkl"
     # clf = AdaBoostClassifier(n_estimators=T, random_state=0, base_estimator=DecisionTreeClassifier(max_depth=MD))
@@ -476,6 +476,10 @@ if __name__ == "__main__":
     clf.fit(X_train, y_train)
     t2 = time.time()
     print(f"LEARNING DONE IN {t2 - t1} s.")
+    pickle_all(path_clf, [clf])
+    clf = unpickle_all(path_clf)[0]
+    fi = np.unique(clf.features_)
+    print(f"SELECTED FEATURES {len(fi)}")
 
     # print("ACCURACY MEASURING...");
     # t1 = time.time()
