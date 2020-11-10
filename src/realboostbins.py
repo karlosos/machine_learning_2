@@ -117,3 +117,21 @@ class RealBoostBins(BaseEstimator, ClassifierMixin):
     #  - [ ] wygenerowac mniejszy zbior, kilkaset cech
     #  - [ ] zrównoleglić detect
     #  - [x] inna cecha może wyjście 12:24? BEST FEATURE: 6716 - jest dobrze
+    #  - [ ] funkcja która będzie wykrycia grupowała w jedno wykrycie (grupowanie klastrów okien na podstawie indeks jaccarda)
+    #       - przerobić funkcję detect żeby nie malowała ale zwracała liste
+    #       - wykrywanie klastrów obiektów i wyczyścić to - postprocessing. Uśrednić środek i rozmiary.
+    #       - pętla główna i w każdym kroku wykrywał dwa które są najbliżej siebie
+    #       - intersection over union - indeks jaccarda - podajemy dwa okna. powie jak mocno się nakładają.
+    #       - dla wszystkich par okienem wylicza iou i wybiera okienka dla których indeks jest największy
+    #       - np. znalazł dwa okienka z iou 0.9 - próg dobry to 1/2
+    #       - w pewnym momencie żaden nie ma indeksu dodatniego, to wtedy nie uczymy tych okien
+    #  - [ ] usprawnić tą funkcję wykrywania ewentualnie
+    #  - [ ] doświadczalny wybór progu decyzyjnego - wygenerowanie krzywej ROC na danych testowych. Mamy dane testowe.
+    #       - płynny sposób zmiana progów decyzyjnych
+    #       - czułośc od 1-specyficzność
+    #       - wybrać próg decyzyjny odpowiadający największej dokładności (do przemyślenia) - jak policzyć dokładność
+    #           na podstawie czułości i specyficzności
+    #  - [ ] dla wybranego progu - wsadowe sprawdzenie wszystkich obrazków testowych
+    #       - porównać gdzie się zapaliły w porównaniu z prawdziwymi detekcjami
+    #       - wykonać w pętli procedurę detekcyjną na rzecz obrazów testowych (całych obrazów) i wyraportować dokładność
+    #           klasyfikatora w formie czułość, FAR na rzecz obrazów

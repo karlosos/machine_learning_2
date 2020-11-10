@@ -351,6 +351,8 @@ def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
     ii = integral_image(i_gray)
     features = np.zeros(n)
 
+    print(f"IMAGE SHAPE: {i_gray.shape}")
+
     n_windows_max = 0
     for s in range (DETECTION_SCALES):
         w = int(np.round(DETECTION_W_MIN * DETECTION_WINDOW_GROWTH**s))
@@ -371,7 +373,7 @@ def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
         w = int(np.round(DETECTION_W_MIN * DETECTION_WINDOW_GROWTH**s))
         dj = int(np.round(w * DETECTION_WINDOW_JUMP))
         dk = dj
-        print("!S = " + str(s) + ", DJ = " + str(dj) + ", DK = " + str(dk) + "...")
+        print("!S = " + str(s) + ", W = " + str(w) + " DJ = " + str(dj) + ", DK = " + str(dk) + "...")
         j_start = int(((ii.shape[0] - w) % dj) / 2)
         k_start = int(((ii.shape[1] - w) % dk) / 2)
         hfs_coords_window_subset = w * hfs_coords_subset
@@ -391,8 +393,8 @@ def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
                     print("!DETECTION AT " + str((j, k)))
                     cv2.rectangle(i_resized, (k, j), (k + w - 1, j + w - 1), (0, 0, 255), 1)
                 n_windows += 1
-                if n_windows % progress_step == 0:
-                    print(f"PROGRESS: {np.round(n_windows / n_windows_max, 2)}")
+                # if n_windows % progress_step == 0:
+                #     print(f"PROGRESS: {np.round(n_windows / n_windows_max, 2)}")
     t2 = time.time()
     total_time = t2 - t1
     print(f"TOTAL TIME: {total_time} s.")
