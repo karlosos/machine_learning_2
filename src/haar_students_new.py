@@ -393,7 +393,7 @@ def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
                 if decision > clf_threshold:
                     print("!DETECTION AT " + str((j, k)))
                     # cv2.rectangle(i_resized, (k, j), (k + w - 1, j + w - 1), (0, 0, 255), 1)
-                    detections.append(([k, j, w], decision))
+                    detections.append((k, j, w, decision))
                 n_windows += 1
                 # if n_windows % progress_step == 0:
                 #     print(f"PROGRESS: {np.round(n_windows / n_windows_max, 2)}")
@@ -404,12 +404,30 @@ def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
     print(f"TIME PER WINDOW: {time_per_window} s.")
     return detections
 
-def draw_bounding_boxes(img, detections):
-    i_resized = resize_image(i)
+def draw_bounding_boxes(img, detections, color=(0, 0, 255), thickness=1):
     for detection in detections:
-        (k, j, w)= detection[0]
-        cv2.rectangle(i_resized, (k, j), (k + w - 1, j + w - 1), (0, 0, 255), 1)
-    return i_resized
+        (k, j, w, score) = detection
+        cv2.rectangle(img, (k, j), (k + w - 1, j + w - 1), color, thickness)
+    return img 
+
+def non_max_suppression(detections, treshold):
+    B = np.array(detections)
+    D = []
+    while B.shape[0] > 0:
+        highest_score_index = np.argmax(B[:, 3])
+        bb = B[highest_score_index, :]
+        D.append((int(bb[0]), int(bb[1]), int(bb[2]), bb[3]))
+        B = np.delete(B, highest_score_index, axis=0)
+        j0, k0, w0, _ = bb
+        coords_1 = np.array([j0, k0, j0 + w0 - 1, k0 + w0 - 1])
+        indexes_to_remove = []
+        for i in range(B.shape[0]):
+            j1, k1, w1, _ = B[i, :]
+            coords_2 = np.array([j1, k1, j1 + w1 - 1, k1 + w1 - 1])
+            if iou(coords_1, coords_2) > treshold:
+                indexes_to_remove.append(i)
+        B = np.delete(B, indexes_to_remove, axis=0)
+    return D
 
 
 if __name__ == "__main__":
@@ -509,8 +527,11 @@ if __name__ == "__main__":
 
     i = cv2.imread(path_data_root + "000000.jpg")
     hfs_coords_subset = hfs_coords[fi]
-    detections = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=2.5)
-    i_out = draw_bounding_boxes(i, detections)
+    detections = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=2.0)
+    i_resized = resize_image(i)
+    i_out = draw_bounding_boxes(i_resized, detections)
+    detections_reduced = non_max_suppression(detections, treshold=0.1)
+    i_out = draw_bounding_boxes(i_out, detections_reduced, color=(255, 0, 0), thickness=3)
     cv2.imshow("DETECTION OUTCOME", i_out)
     cv2.waitKey(0)
     
