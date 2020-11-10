@@ -497,7 +497,7 @@ if __name__ == "__main__":
     # t2 = time.time()
     # print("ACCURACY MEASUREING DONE IN " + str(t2 - t1) + " s.")
 
-    i = cv2.imread(path_data_root + "000001.jpg")
+    i = cv2.imread(path_data_root + "000000.jpg")
     hfs_coords_subset = hfs_coords[fi]
     i_out = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=2.5)
     cv2.imshow("DETECTION OUTCOME", i_out)
