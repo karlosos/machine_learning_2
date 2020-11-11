@@ -5,7 +5,8 @@ import pickle
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
 from numba import jit
-from realboostbins import RealBoostBins
+# from realboostbins import RealBoostBins # path for Karl
+from src.realboostbins import RealBoostBins # path for Wojtas
 
 DEF_HEIGHT = 480
 
@@ -432,8 +433,10 @@ def non_max_suppression(detections, treshold):
 
 if __name__ == "__main__":
     print("STARTING...")     
-    path_data_root = "../data/"
-    path_clfs_root = "../clfs/"    
+    # path_data_root = "../data/" # path for Karl
+    # path_clfs_root = "../clfs/" # path for Karl
+    path_data_root = "/home/wojtek/Dokumenty/machine_learning_2/data/" # path for Wojtas
+    path_clfs_root = "/home/wojtek/Dokumenty/machine_learning_2/clfs/" # path for Wojtas
     s = 6
     p = 4
     hfs_indexes = haar_features_indexes(s, p)
@@ -441,8 +444,8 @@ if __name__ == "__main__":
     n = len(hfs_indexes)
     print("NO. OF HAAR-LIKE FEATURES: " + str(n))
     data_description = "n_" + str(n) + "_s_" + str(s) + "_p_" + str(p)
-    path_data = path_data_root + "fddb_" + data_description + ".pkl"
-    
+    # path_data = path_data_root + "fddb_" + data_description + ".pkl" # path for Karl
+    path_data = path_data_root + "datafddb_" + data_description + ".pkl" # path for Wojtas
     
     # features demonstration on image and example window
 #     i0 = cv2.imread(path_data_root + "000000.jpg")
