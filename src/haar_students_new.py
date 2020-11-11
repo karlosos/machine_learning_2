@@ -5,6 +5,9 @@ import pickle
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.tree import DecisionTreeClassifier
 from numba import jit
+from sklearn import metrics
+import matplotlib.pyplot as plt
+
 # from realboostbins import RealBoostBins # path for Karl
 from src.realboostbins import RealBoostBins # path for Wojtas
 
@@ -430,6 +433,25 @@ def non_max_suppression(detections, treshold):
         B = np.delete(B, indexes_to_remove, axis=0)
     return D
 
+def accuracy_threshold_values(X_test, y_test):
+    """
+
+    @param X_test:
+    @param y_test:
+    """
+    X_test_flatten = X_test.flatten()[:y_test.shape[0]]
+    fpr, tpr, thresholds = metrics.roc_curve(y_test, X_test_flatten)
+    plt.figure()
+    lw = 2
+    plt.plot(fpr, tpr, color='darkorange',
+             lw=lw)
+    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.show()
+    print('accuracy_threshold_values DONE')
 
 if __name__ == "__main__":
     print("STARTING...")     
@@ -477,6 +499,8 @@ if __name__ == "__main__":
     # pickle_all(path_data, [X_train, y_train, X_test, y_test])   
   
     X_train, y_train, X_test, y_test = unpickle_all(path_data)
+    print(f'asd X_train: {X_train.shape}')
+    print(f'123asd y_test: {y_test.shape}')
     train_index_pos = np.where(y_train == 1)[0]
     train_index_neg = np.where(y_train == 1)[0]
     print("X_TRAIN: " + str(X_train.shape) + " [POSITIVES: " + str(train_index_pos.size) + "]")
@@ -537,6 +561,9 @@ if __name__ == "__main__":
     i_out = draw_bounding_boxes(i_out, detections_reduced, color=(255, 0, 0), thickness=3)
     cv2.imshow("DETECTION OUTCOME", i_out)
     cv2.waitKey(0)
+
+    # ROC
+    accuracy_threshold_values(X_test, y_test)
     
     print("DONE.")    
 
