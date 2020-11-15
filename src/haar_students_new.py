@@ -7,6 +7,7 @@ from sklearn.tree import DecisionTreeClassifier
 from numba import jit
 from sklearn import metrics
 import matplotlib.pyplot as plt
+import pandas as pd
 
 # from realboostbins import RealBoostBins # path for Karl
 from src.realboostbins import RealBoostBins # path for Wojtas
@@ -433,14 +434,16 @@ def non_max_suppression(detections, treshold):
         B = np.delete(B, indexes_to_remove, axis=0)
     return D
 
-def accuracy_threshold_values(X_test, y_test):
+def accuracy_threshold_values(X_test, y_test, clf):
     """
 
     @param X_test:
     @param y_test:
+    @param clf
     """
-    X_test_flatten = X_test.flatten()[:y_test.shape[0]]
-    fpr, tpr, thresholds = metrics.roc_curve(y_test, X_test_flatten)
+
+    y_scores = clf.decision_function(X_test)
+     fpr, tpr, thresholds = metrics.roc_curve(y_test, y_scores)
     plt.figure()
     lw = 2
     plt.plot(fpr, tpr, color='darkorange',
@@ -451,7 +454,10 @@ def accuracy_threshold_values(X_test, y_test):
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     plt.show()
-    print('accuracy_threshold_values DONE')
+
+
+    print(f'accuracy_threshold_values DONE')
+
 
 if __name__ == "__main__":
     print("STARTING...")     
@@ -552,18 +558,18 @@ if __name__ == "__main__":
     # t2 = time.time()
     # print("ACCURACY MEASUREING DONE IN " + str(t2 - t1) + " s.")
 
-    i = cv2.imread(path_data_root + "000000.jpg")
-    hfs_coords_subset = hfs_coords[fi]
-    detections = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=2.0)
-    i_resized = resize_image(i)
-    i_out = draw_bounding_boxes(i_resized, detections)
-    detections_reduced = non_max_suppression(detections, treshold=0.1)
-    i_out = draw_bounding_boxes(i_out, detections_reduced, color=(255, 0, 0), thickness=3)
-    cv2.imshow("DETECTION OUTCOME", i_out)
-    cv2.waitKey(0)
+    # i = cv2.imread(path_data_root + "000000.jpg")
+    # hfs_coords_subset = hfs_coords[fi]
+    # detections = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=2.0)
+    # i_resized = resize_image(i)
+    # i_out = draw_bounding_boxes(i_resized, detections)
+    # detections_reduced = non_max_suppression(detections, treshold=0.1)
+    # i_out = draw_bounding_boxes(i_out, detections_reduced, color=(255, 0, 0), thickness=3)
+    # cv2.imshow("DETECTION OUTCOME", i_out)
+    # cv2.waitKey(0)
 
     # ROC
-    accuracy_threshold_values(X_test, y_test)
+    accuracy_threshold_values(X_test, y_test, clf)
     
     print("DONE.")    
 
