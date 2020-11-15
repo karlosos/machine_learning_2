@@ -434,6 +434,16 @@ def non_max_suppression(detections, treshold):
         B = np.delete(B, indexes_to_remove, axis=0)
     return D
 
+# https://albertusk95.github.io/posts/2019/12/best-threshold-maximize-accuracy-from-roc-pr-curve/
+def best_threshold_from_roc_curve(tpr, fpr, thresholds, num_pos_class, num_neg_class):
+
+    tp = tpr * num_pos_class
+    tn = (1 - fpr) * num_neg_class
+    acc = (tp + tn) / (num_pos_class + num_neg_class)
+
+    best_threshold = thresholds[np.argmax(acc)]
+    return best_threshold
+
 def accuracy_threshold_values(X_test, y_test, clf):
     """
 
@@ -443,7 +453,7 @@ def accuracy_threshold_values(X_test, y_test, clf):
     """
 
     y_scores = clf.decision_function(X_test)
-     fpr, tpr, thresholds = metrics.roc_curve(y_test, y_scores)
+    fpr, tpr, thresholds = metrics.roc_curve(y_test, y_scores)
     plt.figure()
     lw = 2
     plt.plot(fpr, tpr, color='darkorange',
@@ -455,7 +465,8 @@ def accuracy_threshold_values(X_test, y_test, clf):
     plt.ylabel('True Positive Rate')
     plt.show()
 
-
+    find_maximal_accuracy = best_threshold_from_roc_curve(fpr, tpr, thresholds, y_test.shape[0], y_test.shape[0])
+    print(f'Maximal accuracy : {find_maximal_accuracy}')
     print(f'accuracy_threshold_values DONE')
 
 
