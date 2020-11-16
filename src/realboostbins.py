@@ -108,7 +108,7 @@ class RealBoostBins(BaseEstimator, ClassifierMixin):
 
     def predict(self, X):
         F = self.decision_function(X)
-        return self.class_labels_[F > 0.0]
+        return [self.class_labels_[1] if decision > 0 else self.class_labels_[0] for decision in F]
 
     # TODO:
     #  - [x] reważenie wag
