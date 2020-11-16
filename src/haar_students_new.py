@@ -9,8 +9,8 @@ from sklearn import metrics
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# from realboostbins import RealBoostBins # path for Karl
-from src.realboostbins import RealBoostBins # path for Wojtas
+from realboostbins import RealBoostBins # path for Karl
+# from src.realboostbins import RealBoostBins # path for Wojtas
 
 DEF_HEIGHT = 480
 
@@ -434,48 +434,12 @@ def non_max_suppression(detections, treshold):
         B = np.delete(B, indexes_to_remove, axis=0)
     return D
 
-# https://albertusk95.github.io/posts/2019/12/best-threshold-maximize-accuracy-from-roc-pr-curve/
-def best_threshold_from_roc_curve(tpr, fpr, thresholds, num_pos_class, num_neg_class):
-
-    tp = tpr * num_pos_class
-    tn = (1 - fpr) * num_neg_class
-    acc = (tp + tn) / (num_pos_class + num_neg_class)
-
-    best_threshold = thresholds[np.argmax(acc)]
-    return best_threshold
-
-def accuracy_threshold_values(X_test, y_test, clf):
-    """
-
-    @param X_test:
-    @param y_test:
-    @param clf
-    """
-
-    y_scores = clf.decision_function(X_test)
-    fpr, tpr, thresholds = metrics.roc_curve(y_test, y_scores)
-    plt.figure()
-    lw = 2
-    plt.plot(fpr, tpr, color='darkorange',
-             lw=lw)
-    plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
-    plt.xlim([0.0, 1.0])
-    plt.ylim([0.0, 1.05])
-    plt.xlabel('False Positive Rate')
-    plt.ylabel('True Positive Rate')
-    plt.show()
-
-    find_maximal_accuracy = best_threshold_from_roc_curve(fpr, tpr, thresholds, y_test.shape[0], y_test.shape[0])
-    print(f'Maximal accuracy : {find_maximal_accuracy}')
-    print(f'accuracy_threshold_values DONE')
-
-
 if __name__ == "__main__":
     print("STARTING...")     
-    # path_data_root = "../data/" # path for Karl
-    # path_clfs_root = "../clfs/" # path for Karl
-    path_data_root = "/home/wojtek/Dokumenty/machine_learning_2/data/" # path for Wojtas
-    path_clfs_root = "/home/wojtek/Dokumenty/machine_learning_2/clfs/" # path for Wojtas
+    path_data_root = "../data/" # path for Karl
+    path_clfs_root = "../clfs/" # path for Karl
+    # path_data_root = "/home/wojtek/Dokumenty/machine_learning_2/data/" # path for Wojtas
+    # path_clfs_root = "/home/wojtek/Dokumenty/machine_learning_2/clfs/" # path for Wojtas
     s = 6
     p = 4
     hfs_indexes = haar_features_indexes(s, p)
@@ -483,8 +447,8 @@ if __name__ == "__main__":
     n = len(hfs_indexes)
     print("NO. OF HAAR-LIKE FEATURES: " + str(n))
     data_description = "n_" + str(n) + "_s_" + str(s) + "_p_" + str(p)
-    # path_data = path_data_root + "fddb_" + data_description + ".pkl" # path for Karl
-    path_data = path_data_root + "datafddb_" + data_description + ".pkl" # path for Wojtas
+    path_data = path_data_root + "fddb_" + data_description + ".pkl" # path for Karl
+    # path_data = path_data_root + "datafddb_" + data_description + ".pkl" # path for Wojtas
     
     # features demonstration on image and example window
 #     i0 = cv2.imread(path_data_root + "000000.jpg")
@@ -555,32 +519,29 @@ if __name__ == "__main__":
     fi = np.unique(clf.features_).astype("int32")
     print(f"SELECTED FEATURES {len(fi)}")
 
-    # print("ACCURACY MEASURING...");
-    # t1 = time.time()
-    # print("TRAIN ACC: " + str(clf.score(X_train, y_train)))
-    # y_test_df = clf.decision_function(X_test)
-    # y_test_pred = (y_test_df > 0.0) * 2 - 1
-    # acc = np.sum(y_test == y_test_pred) / len(y_test)
-    # print("TEST ACC: " + str(acc))    
-    # sens = np.sum(y_test[test_index_pos] == y_test_pred[test_index_pos]) / len(test_index_pos)
-    # far = 1.0 - np.sum(y_test[test_index_neg] == y_test_pred[test_index_neg]) / len(test_index_neg)
-    # print("TEST SENSITIVITY: " + str(sens))
-    # print("TEST FAR: " + str(far))
-    # t2 = time.time()
-    # print("ACCURACY MEASUREING DONE IN " + str(t2 - t1) + " s.")
+    print("ACCURACY MEASURING...")
+    t1 = time.time()
+    print("TRAIN ACC: " + str(clf.score(X_train, y_train)))
+    y_test_df = clf.decision_function(X_test)
+    y_test_pred = (y_test_df > 0) * 2 - 1
+    acc = np.sum(y_test == y_test_pred) / len(y_test)
+    print("TEST ACC: " + str(acc))
+    sens = np.sum(y_test[test_index_pos] == y_test_pred[test_index_pos]) / len(test_index_pos)
+    far = 1.0 - np.sum(y_test[test_index_neg] == y_test_pred[test_index_neg]) / len(test_index_neg)
+    print("TEST SENSITIVITY: " + str(sens))
+    print("TEST FAR: " + str(far))
+    t2 = time.time()
+    print("ACCURACY MEASUREING DONE IN " + str(t2 - t1) + " s.")
 
     # i = cv2.imread(path_data_root + "000000.jpg")
     # hfs_coords_subset = hfs_coords[fi]
-    # detections = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=2.0)
+    # detections = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0.33)
     # i_resized = resize_image(i)
     # i_out = draw_bounding_boxes(i_resized, detections)
     # detections_reduced = non_max_suppression(detections, treshold=0.1)
     # i_out = draw_bounding_boxes(i_out, detections_reduced, color=(255, 0, 0), thickness=3)
     # cv2.imshow("DETECTION OUTCOME", i_out)
     # cv2.waitKey(0)
-
-    # ROC
-    accuracy_threshold_values(X_test, y_test, clf)
     
     print("DONE.")    
 
