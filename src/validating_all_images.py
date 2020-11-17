@@ -2,21 +2,22 @@ import numpy as np
 import cv2
 
 from haar_students_new import gray_image, integral_image, \
-    haar_features_indexes, haar_features_coordinates, unpickle_all
+    haar_features_indexes, haar_features_coordinates, unpickle_all, detect, draw_bounding_boxes
 from realboostbins import RealBoostBins  # path for Karol
 # from src.realboostbins import RealBoostBins  # path for Wojtas
 
-def fddb_data(path_fddb_root, clf, verbose=False):
+def fddb_data(path_fddb_root, verbose=False):
     """
     Read all data folds
     :param path_fddb_root: directory with FDDB-folds, 2002 and 2003 folders
-    :param clf: classifier object for detection
     :param verbose: if True then it shows images with bounding boxes. Default is False.
-    :return: TODO: consider what it should return. Maybe accuracy and other metrics or real and detected bounding boxes
-                   for each image?
+    :return: combined_coords: tuple for each image with (name of file, ground truth bounding boxes,
+    detected bounding boxes with decision values (limited to those which decision value > 0))
     """
+    clf, hfs_coords_subset, fi, n = load_classifier()
+
     fold_paths_train = [
-        "FDDB-folds/FDDB-fold-01-ellipseList.txt",
+        # "FDDB-folds/FDDB-fold-01-ellipseList.txt",
         # "FDDB-folds/FDDB-fold-02-ellipseList.txt",
         # "FDDB-folds/FDDB-fold-03-ellipseList.txt",
         # "FDDB-folds/FDDB-fold-04-ellipseList.txt",
@@ -24,23 +25,36 @@ def fddb_data(path_fddb_root, clf, verbose=False):
         # "FDDB-folds/FDDB-fold-06-ellipseList.txt",
         # "FDDB-folds/FDDB-fold-07-ellipseList.txt",
         # "FDDB-folds/FDDB-fold-08-ellipseList.txt",
-        # "FDDB-folds/FDDB-fold-09-ellipseList.txt",
-        # "FDDB-folds/FDDB-fold-10-ellipseList.txt",
+        "FDDB-folds/FDDB-fold-09-ellipseList.txt",
+        "FDDB-folds/FDDB-fold-10-ellipseList.txt",
     ]
+
+    combined_coords = []
+
     for index, fold_path in enumerate(fold_paths_train):
         print("PROCESSING TRAIN FOLD " + str(index + 1) + "/" + str(len(fold_paths_train)) + "...")
-        fddb_read_single_fold(path_fddb_root, fold_path, verbose=verbose)
+        single_fold_coords = fddb_read_single_fold(path_fddb_root, fold_path, clf, hfs_coords_subset, fi, n, verbose=verbose)
+        combined_coords = combined_coords + single_fold_coords
+        print("")
+
+    print(f'FINISHED GETTING COORDS FROM ALL FOLDS')
+    print("")
+    return combined_coords
 
 
-def fddb_read_single_fold(path_root, path_fold_relative, verbose=False):
+def fddb_read_single_fold(path_root, path_fold_relative, clf, hfs_coords_subset, fi, n, verbose=False):
     """
     Read single fold file and iterate through all images in this fold
 
     :param path_root: directory with FDDB-folds, 2002 and 2003 folders
     :param path_fold_relative: directory with FDD-fold text files
+    :param clf: classifier used for detection
+    :param hfs_coords_subset: subset of haar features coords
+    :param fi: features indexes selected by classifier
+    :param n: number of all feature indexes
     :param verbose: if True then it shows images with bounding boxes. Default is False.
-    :return: TODO: consider what it should return. Maybe accuracy and other metrics or real and detected bounding boxes
-                   for each image?
+    :return: combined_coords: tuple for each image with (name of file, ground truth bounding boxes,
+    detected bounding boxes with decision values (limited to those which decision value > 0))
     """
     f = open(path_root + path_fold_relative, "r")
     line = f.readline().strip()
@@ -66,6 +80,7 @@ def fddb_read_single_fold(path_root, path_fold_relative, verbose=False):
         n_img += 1
         n_img_faces = int(f.readline())
         img_faces_coords = []
+        # Read ground truth bounding boxes from file
         for z in range(n_img_faces):
             r_major, r_minor, angle, center_x, center_y, dummy_one = list(map(float, f.readline().strip().split()))
             w = int(1.5 * r_major)
@@ -87,19 +102,22 @@ def fddb_read_single_fold(path_root, path_fold_relative, verbose=False):
                 p2 = (k0 + w - 1, j0 + w - 1)
                 cv2.rectangle(i0, p1, p2, (0, 0, 255), 1)
                 cv2.imshow("FDDB", i0)
-        # TODO: run detect with classifier and compare with img_faces_coors
-
+        # Run detection for image
+        detections = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=3, ii=ii)
         if verbose:
+            i0 = draw_bounding_boxes(i0, detections, color=(54, 193, 56), thickness=1)
             cv2.imshow("FDDB", i0)
             cv2.waitKey(0)
-        # TODO: change None to detected_coords
-        combined_coords.append((img_faces_coords, None))
+        combined_coords.append((file_name, img_faces_coords, detections))
         line = f.readline().strip()
+        if counter > 3:
+            break
     print("IMAGES IN THIS FOLD: " + str(n_img) + ".")
     print("ACCEPTED FACES IN THIS FOLD: " + str(n_faces) + ".")
     print(f"Length of combined_coords: {len(combined_coords)}")
-    print(f"First element of combined_coords: {combined_coords[1]}")
+    print(f"First element of combined_coords: {combined_coords[0]}")
     f.close()
+    return combined_coords
 
 
 def load_classifier():
@@ -108,6 +126,7 @@ def load_classifier():
     s = 6
     p = 4
     hfs_indexes = haar_features_indexes(s, p)
+    hfs_coords = haar_features_coordinates(hfs_indexes, s, p)
     n = len(hfs_indexes)
     print("NO. OF HAAR-LIKE FEATURES: " + str(n))
     data_description = "n_" + str(n) + "_s_" + str(s) + "_p_" + str(p)
@@ -116,9 +135,14 @@ def load_classifier():
     clf_description = data_description + "_T_" + str(T) + "_B_" + str(B)
     path_clf = path_clfs_root + "fddb_real_" + clf_description + ".pkl"
     clf = unpickle_all(path_clf)[0]
-    return clf
+    fi = np.unique(clf.features_).astype("int32")
+
+    hfs_coords_subset = hfs_coords[fi]
+    return clf, hfs_coords_subset, fi, n
 
 
 if __name__ == '__main__':
-    clf = load_classifier()
-    fddb_data("c:/Dev/machine_learning_2/data/", clf=clf, verbose=False)
+    combined_coords = fddb_data("c:/Dev/machine_learning_2/data/", verbose=False)
+    print(f'Combined coords length: {len(combined_coords)}')
+    print(f'First coords: {combined_coords[0]}')
+    print(f'Last coords: {combined_coords[-1]}')
