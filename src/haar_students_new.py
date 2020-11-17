@@ -350,14 +350,15 @@ def unpickle_all(fname):
     print("UNPICKLE DONE. [TIME: " + str(t2 - t1) + " s.]")
     return some_list 
 
-def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
+def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0, ii=None):
     detections = []
-    i_resized = resize_image(i)
-    i_gray = gray_image(i_resized)
-    ii = integral_image(i_gray)
+    if ii is None:
+        i_resized = resize_image(i)
+        i_gray = gray_image(i_resized)
+        ii = integral_image(i_gray)
     features = np.zeros(n)
 
-    print(f"IMAGE SHAPE: {i_gray.shape}")
+    print(f"IMAGE SHAPE: {ii.shape}")
 
     n_windows_max = 0
     for s in range (DETECTION_SCALES):
