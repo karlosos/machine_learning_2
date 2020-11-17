@@ -6,11 +6,11 @@ from haar_students_new import gray_image, integral_image, \
 from realboostbins import RealBoostBins  # path for Karol
 # from src.realboostbins import RealBoostBins  # path for Wojtas
 
-def fddb_data(path_fddb_root, verbose=False):
+def fddb_data(path_fddb_root, show_images=False, verbose=False):
     """
     Read all data folds
     :param path_fddb_root: directory with FDDB-folds, 2002 and 2003 folders
-    :param verbose: if True then it shows images with bounding boxes. Default is False.
+    :param show_images: if True then it shows images with bounding boxes. Default is False.
     :return: combined_coords: tuple for each image with (name of file, ground truth bounding boxes,
     detected bounding boxes with decision values (limited to those which decision value > 0))
     """
@@ -32,17 +32,20 @@ def fddb_data(path_fddb_root, verbose=False):
     combined_coords = []
 
     for index, fold_path in enumerate(fold_paths_train):
-        print("PROCESSING TRAIN FOLD " + str(index + 1) + "/" + str(len(fold_paths_train)) + "...")
-        single_fold_coords = fddb_read_single_fold(path_fddb_root, fold_path, clf, hfs_coords_subset, fi, n, verbose=verbose)
+        if verbose:
+            print("PROCESSING TRAIN FOLD " + str(index + 1) + "/" + str(len(fold_paths_train)) + "...")
+        single_fold_coords = fddb_read_single_fold(path_fddb_root, fold_path, clf, hfs_coords_subset, fi, n, show_images=show_images)
         combined_coords = combined_coords + single_fold_coords
-        print("")
+        if verbose:
+            print("")
 
-    print(f'FINISHED GETTING COORDS FROM ALL FOLDS')
-    print("")
+    if verbose:
+        print(f'FINISHED GETTING COORDS FROM ALL FOLDS')
+        print("")
     return combined_coords
 
 
-def fddb_read_single_fold(path_root, path_fold_relative, clf, hfs_coords_subset, fi, n, verbose=False):
+def fddb_read_single_fold(path_root, path_fold_relative, clf, hfs_coords_subset, fi, n, verbose=False, show_images=False):
     """
     Read single fold file and iterate through all images in this fold
 
@@ -52,7 +55,7 @@ def fddb_read_single_fold(path_root, path_fold_relative, clf, hfs_coords_subset,
     :param hfs_coords_subset: subset of haar features coords
     :param fi: features indexes selected by classifier
     :param n: number of all feature indexes
-    :param verbose: if True then it shows images with bounding boxes. Default is False.
+    :param show_images: if True then it shows images with bounding boxes. Default is False.
     :return: combined_coords: tuple for each image with (name of file, ground truth bounding boxes,
     detected bounding boxes with decision values (limited to those which decision value > 0))
     """
@@ -70,8 +73,9 @@ def fddb_read_single_fold(path_root, path_fold_relative, clf, hfs_coords_subset,
     combined_coords = []
     while line is not "":
         file_name = path_root + line + ".jpg"
-        log_line = str(counter) + ": [" + file_name + "]"
-        print(log_line)
+        if verbose:
+            log_line = str(counter) + ": [" + file_name + "]"
+            print(log_line)
         counter += 1
 
         i0 = cv2.imread(file_name)
@@ -97,14 +101,14 @@ def fddb_read_single_fold(path_root, path_fold_relative, clf, hfs_coords_subset,
                 continue
             n_faces += 1
             img_faces_coords.append(img_face_coords)
-            if verbose:
+            if show_images:
                 p1 = (k0, j0)
                 p2 = (k0 + w - 1, j0 + w - 1)
                 cv2.rectangle(i0, p1, p2, (0, 0, 255), 1)
                 cv2.imshow("FDDB", i0)
         # Run detection for image
         detections = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=3, ii=ii)
-        if verbose:
+        if show_images:
             i0 = draw_bounding_boxes(i0, detections, color=(54, 193, 56), thickness=1)
             cv2.imshow("FDDB", i0)
             cv2.waitKey(0)
@@ -112,15 +116,16 @@ def fddb_read_single_fold(path_root, path_fold_relative, clf, hfs_coords_subset,
         line = f.readline().strip()
         if counter > 3:
             break
-    print("IMAGES IN THIS FOLD: " + str(n_img) + ".")
-    print("ACCEPTED FACES IN THIS FOLD: " + str(n_faces) + ".")
-    print(f"Length of combined_coords: {len(combined_coords)}")
-    print(f"First element of combined_coords: {combined_coords[0]}")
+    if verbose:
+        print("IMAGES IN THIS FOLD: " + str(n_img) + ".")
+        print("ACCEPTED FACES IN THIS FOLD: " + str(n_faces) + ".")
+        print(f"Length of combined_coords: {len(combined_coords)}")
+        print(f"First element of combined_coords: {combined_coords[0]}")
     f.close()
     return combined_coords
 
 
-def load_classifier():
+def load_classifier(verbose=False):
     path_data_root = "../data/"  # path for Karl
     path_clfs_root = "../clfs/"  # path for Karl
     s = 6
@@ -128,7 +133,8 @@ def load_classifier():
     hfs_indexes = haar_features_indexes(s, p)
     hfs_coords = haar_features_coordinates(hfs_indexes, s, p)
     n = len(hfs_indexes)
-    print("NO. OF HAAR-LIKE FEATURES: " + str(n))
+    if verbose:
+        print("NO. OF HAAR-LIKE FEATURES: " + str(n))
     data_description = "n_" + str(n) + "_s_" + str(s) + "_p_" + str(p)
     T = 128  # 128 słabych klasyfikatorów
     B = 8  # maximum depth
@@ -142,7 +148,7 @@ def load_classifier():
 
 
 if __name__ == '__main__':
-    combined_coords = fddb_data("c:/Dev/machine_learning_2/data/", verbose=False)
+    combined_coords = fddb_data("c:/Dev/machine_learning_2/data/", show_images=False)
     print(f'Combined coords length: {len(combined_coords)}')
     print(f'First coords: {combined_coords[0]}')
     print(f'Last coords: {combined_coords[-1]}')
