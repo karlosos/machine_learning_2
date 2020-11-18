@@ -25,7 +25,7 @@ def fddb_data(path_fddb_root, show_images=False, verbose=False):
         # "FDDB-folds/FDDB-fold-06-ellipseList.txt",
         # "FDDB-folds/FDDB-fold-07-ellipseList.txt",
         # "FDDB-folds/FDDB-fold-08-ellipseList.txt",
-        "FDDB-folds/FDDB-fold-09-ellipseList.txt",
+        # "FDDB-folds/FDDB-fold-09-ellipseList.txt",
         "FDDB-folds/FDDB-fold-10-ellipseList.txt",
     ]
 
@@ -114,7 +114,7 @@ def fddb_read_single_fold(path_root, path_fold_relative, clf, hfs_coords_subset,
             cv2.waitKey(0)
         combined_coords.append((file_name, img_faces_coords, detections))
         line = f.readline().strip()
-        if counter > 3:
+        if counter > 10:
             break
     if verbose:
         print("IMAGES IN THIS FOLD: " + str(n_img) + ".")
