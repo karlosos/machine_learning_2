@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import pickle
 
 from haar_students_new import gray_image, integral_image, \
     haar_features_indexes, haar_features_coordinates, unpickle_all, detect, draw_bounding_boxes
@@ -17,15 +18,15 @@ def fddb_data(path_fddb_root, show_images=False, verbose=False):
     clf, hfs_coords_subset, fi, n = load_classifier()
 
     fold_paths_train = [
-        # "FDDB-folds/FDDB-fold-01-ellipseList.txt",
-        # "FDDB-folds/FDDB-fold-02-ellipseList.txt",
-        # "FDDB-folds/FDDB-fold-03-ellipseList.txt",
-        # "FDDB-folds/FDDB-fold-04-ellipseList.txt",
-        # "FDDB-folds/FDDB-fold-05-ellipseList.txt",
-        # "FDDB-folds/FDDB-fold-06-ellipseList.txt",
-        # "FDDB-folds/FDDB-fold-07-ellipseList.txt",
-        # "FDDB-folds/FDDB-fold-08-ellipseList.txt",
-        # "FDDB-folds/FDDB-fold-09-ellipseList.txt",
+        "FDDB-folds/FDDB-fold-01-ellipseList.txt",
+        "FDDB-folds/FDDB-fold-02-ellipseList.txt",
+        "FDDB-folds/FDDB-fold-03-ellipseList.txt",
+        "FDDB-folds/FDDB-fold-04-ellipseList.txt",
+        "FDDB-folds/FDDB-fold-05-ellipseList.txt",
+        "FDDB-folds/FDDB-fold-06-ellipseList.txt",
+        "FDDB-folds/FDDB-fold-07-ellipseList.txt",
+        "FDDB-folds/FDDB-fold-08-ellipseList.txt",
+        "FDDB-folds/FDDB-fold-09-ellipseList.txt",
         "FDDB-folds/FDDB-fold-10-ellipseList.txt",
     ]
 
@@ -34,7 +35,7 @@ def fddb_data(path_fddb_root, show_images=False, verbose=False):
     for index, fold_path in enumerate(fold_paths_train):
         if verbose:
             print("PROCESSING TRAIN FOLD " + str(index + 1) + "/" + str(len(fold_paths_train)) + "...")
-        single_fold_coords = fddb_read_single_fold(path_fddb_root, fold_path, clf, hfs_coords_subset, fi, n, show_images=show_images)
+        single_fold_coords = fddb_read_single_fold(path_fddb_root, fold_path, clf, hfs_coords_subset, fi, n, show_images=show_images, verbose=verbose)
         combined_coords = combined_coords + single_fold_coords
         if verbose:
             print("")
@@ -107,15 +108,15 @@ def fddb_read_single_fold(path_root, path_fold_relative, clf, hfs_coords_subset,
                 cv2.rectangle(i0, p1, p2, (0, 0, 255), 1)
                 cv2.imshow("FDDB", i0)
         # Run detection for image
-        detections = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=3, ii=ii)
+        detections = detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=-3, ii=ii)
         if show_images:
             i0 = draw_bounding_boxes(i0, detections, color=(54, 193, 56), thickness=1)
             cv2.imshow("FDDB", i0)
             cv2.waitKey(0)
         combined_coords.append((file_name, img_faces_coords, detections))
         line = f.readline().strip()
-        if counter > 10:
-            break
+        # if counter > 10:
+        #     break
     if verbose:
         print("IMAGES IN THIS FOLD: " + str(n_img) + ".")
         print("ACCEPTED FACES IN THIS FOLD: " + str(n_faces) + ".")
@@ -147,8 +148,20 @@ def load_classifier(verbose=False):
     return clf, hfs_coords_subset, fi, n
 
 
+def pickle_data(data, file_path):
+    with open(file_path, 'wb') as f:
+        pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
+
+
+def unpickle_data(file_path):
+    with open(file_path, 'rb') as f:
+        data = pickle.load(f)
+    return data
+
+
 if __name__ == '__main__':
-    combined_coords = fddb_data("c:/Dev/machine_learning_2/data/", show_images=False)
+    combined_coords = fddb_data("c:/Dev/machine_learning_2/data/", show_images=False, verbose=True)
+    pickle_data(combined_coords, "combined_coords_greater_neg3.pickle")
     print(f'Combined coords length: {len(combined_coords)}')
     print(f'First coords: {combined_coords[0]}')
     print(f'Last coords: {combined_coords[-1]}')
