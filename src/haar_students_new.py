@@ -340,24 +340,28 @@ def pickle_all(fname, some_list):
     t2 = time.time()
     print("PICKLE DONE. [TIME: " + str(t2 - t1) + " s.]")
 
-def unpickle_all(fname):
-    print("UNPICKLE...")
-    t1 = time.time()    
+def unpickle_all(fname, verbose=False):
+    if verbose:
+        print("UNPICKLE...")
+        t1 = time.time()
     f = open(fname, "rb")
     some_list = pickle.load(f)
     f.close()
-    t2 = time.time()
-    print("UNPICKLE DONE. [TIME: " + str(t2 - t1) + " s.]")
+    if verbose:
+        t2 = time.time()
+        print("UNPICKLE DONE. [TIME: " + str(t2 - t1) + " s.]")
     return some_list 
 
-def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
+def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0, ii=None, verbose=False):
     detections = []
-    i_resized = resize_image(i)
-    i_gray = gray_image(i_resized)
-    ii = integral_image(i_gray)
+    if ii is None:
+        i_resized = resize_image(i)
+        i_gray = gray_image(i_resized)
+        ii = integral_image(i_gray)
     features = np.zeros(n)
 
-    print(f"IMAGE SHAPE: {i_gray.shape}")
+    if verbose:
+        print(f"IMAGE SHAPE: {ii.shape}")
 
     n_windows_max = 0
     for s in range (DETECTION_SCALES):
@@ -369,7 +373,8 @@ def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
         for j in range(j_start, ii.shape[0] - w + 1, dj):
             for k in range(k_start, ii.shape[1] - w + 1, dk):
                 n_windows_max += 1
-    print(f"WINDOWS TO BE CHECKED: {n_windows_max}")
+    if verbose:
+        print(f"WINDOWS TO BE CHECKED: {n_windows_max}")
 
     progress_step = int(np.round(0.01 * n_windows_max))
 
@@ -379,12 +384,14 @@ def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
         w = int(np.round(DETECTION_W_MIN * DETECTION_WINDOW_GROWTH**s))
         dj = int(np.round(w * DETECTION_WINDOW_JUMP))
         dk = dj
-        print("!S = " + str(s) + ", W = " + str(w) + " DJ = " + str(dj) + ", DK = " + str(dk) + "...")
+        if verbose:
+            print("!S = " + str(s) + ", W = " + str(w) + " DJ = " + str(dj) + ", DK = " + str(dk) + "...")
         j_start = int(((ii.shape[0] - w) % dj) / 2)
         k_start = int(((ii.shape[1] - w) % dk) / 2)
         hfs_coords_window_subset = w * hfs_coords_subset
         hfs_coords_window_subset = np.array(list(map(lambda npa: npa.astype("int32"), hfs_coords_window_subset)))
-        print(f"Loop from {j_start} to {ii.shape[0] - w + 1} step: {dj}")
+        if verbose:
+            print(f"Loop from {j_start} to {ii.shape[0] - w + 1} step: {dj}")
         for j in range(j_start, ii.shape[0] - w + 1, dj):
             for k in range(k_start, ii.shape[1] - w + 1, dk):
                 # t1_extraction = time.time()
@@ -396,7 +403,8 @@ def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
                 # t2_decision = time.time()
                 # print(f"EXTRACTION: {t2_extraction-t1_extraction} s., DECISION: {t2_decision - t1_decision}")
                 if decision > clf_threshold:
-                    print("!DETECTION AT " + str((j, k)))
+                    if verbose:
+                        print("!DETECTION AT " + str((j, k)))
                     # cv2.rectangle(i_resized, (k, j), (k + w - 1, j + w - 1), (0, 0, 255), 1)
                     detections.append((k, j, w, decision))
                 n_windows += 1
@@ -404,9 +412,11 @@ def detect(i, clf, hfs_coords_subset, n, fi, clf_threshold=0):
                 #     print(f"PROGRESS: {np.round(n_windows / n_windows_max, 2)}")
     t2 = time.time()
     total_time = t2 - t1
-    print(f"TOTAL TIME: {total_time} s.")
+    if verbose:
+        print(f"TOTAL TIME: {total_time} s.")
     time_per_window = total_time / n_windows
-    print(f"TIME PER WINDOW: {time_per_window} s.")
+    if verbose:
+        print(f"TIME PER WINDOW: {time_per_window} s.")
     return detections
 
 def draw_bounding_boxes(img, detections, color=(0, 0, 255), thickness=1):
