@@ -555,4 +555,3 @@ if __name__ == "__main__":
     
     print("DONE.")    
 
-    # TODO: wariant równoległy detect 11:41
