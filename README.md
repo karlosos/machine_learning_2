@@ -1,4 +1,7 @@
+<img src="./docs/haar.png" width=200 align="right">
 <h1 align="center">Machine Learning 2</h1>
+
+<h4 align="center">Face recognition using Haar features and Realboost built from scratch with Python.<h4>
 
 <div align="center">
 
